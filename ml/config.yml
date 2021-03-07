@@ -1,0 +1,68 @@
+globals:
+    exp_name: "example"
+    is_continue: False
+    seed: 1213
+    device: cuda
+    num_epochs: 50
+    csv_path: "dataset_tponly.csv"
+    tmp_dir: "./tmp"
+    use_fold: 0
+    num_class: 24
+    step_sec: 10
+    mixup: -1
+
+model:
+    name: ResNest # model instance name. [ResNet50 or DenseNet201]
+    params:
+        num_class: 24
+        pretrained: True
+
+dataset:
+    name: SpectrogramDataset
+    test_name: TestDataset
+    params:
+        img_size: 256
+        pariod_sec: 10
+        target_sr: 32000
+        n_mels: 64
+        base_dir: "D:/DataSet/rfcx-spacies-audio-detection/"
+    augment:
+        signal: [ add_noise_snr, pitch_shift, stretch, change_volume]
+        spectrogram: [drop_stripes]
+    transformer: Signal2TriMelTransformer
+    
+split:
+    name: StratifiedKFold
+    params:
+        n_splits: 5
+        random_state: 42
+        shuffle: True
+
+loader:
+    train:
+        batch_size: 32
+        shuffle: True
+        num_workers: 16
+        pin_memory: True
+        drop_last: True
+    val:
+        batch_size: 16
+        shuffle: False
+        num_workers: 16
+        pin_memory: True
+        drop_last: False
+
+
+loss:
+    name: BCEWithLogitsLoss
+    params: {}
+
+optimizer:
+    name: Adam
+    params:
+        lr: 0.001
+
+scheduler:
+    name: CosineAnnealingLR
+    params:
+        T_max: 10
