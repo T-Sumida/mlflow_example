@@ -1,0 +1,98 @@
+version: "3"
+services:
+
+  ml:
+    image: dev_ml
+    build:
+      context: .
+      dockerfile: ./config/Dockerfile.devml
+    ports:
+      - 8080:8080
+    depends_on: 
+      - mlflow
+    environment: 
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=utility,compute
+    volumes: 
+      - ./ml:/ml
+      - ./dataset:/dataset
+    command:
+      - /bin/bash
+    tty: true
+      
+
+  # mlflow trackingサーバ
+  mlflow:
+    image: mlflow
+    build:
+      context: .
+      dockerfile: ./config/Dockerfile.mlflow
+    ports:
+      - 5000:5000
+    restart: always
+    depends_on:
+      - mysql
+      - minio
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minio-access-key
+      AWS_SECRET_ACCESS_KEY: minio-secret-key
+    command: mlflow server --backend-store-uri mysql://mlflowuser:mlflowpassword@mysql:3306/mlflowdb --default-artifact-root s3://default/ --host 0.0.0.0 --port 5000
+    volumes:
+      - mlflow:/var/mlflow
+    networks:
+      - nginx_network
+
+  # artifact以外の情報記録用
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root-password
+      MYSQL_DATABASE: mlflowdb
+      MYSQL_USER: mlflowuser
+      MYSQL_PASSWORD: mlflowpassword
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./config/timeout.cnf:/etc/mysql/conf.d/timeout.cnf
+    networks:
+      - nginx_network
+
+  # artifact保存用のストレージ
+  minio:
+    image: minio/minio
+    ports:
+      - 9000:9000
+    restart: always
+    volumes:
+     - minio1:/export
+    environment:
+      MINIO_ACCESS_KEY: minio-access-key
+      MINIO_SECRET_KEY: minio-secret-key
+    command: server /export
+    networks:
+      - nginx_network
+
+  # minioコンテナ起動時にデフォルトのバケットを自動作成する
+  defaultbucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc config host add myminio http://minio:9000 minio-access-key minio-secret-key) do echo 'try to create buckets...' && sleep 1; done;
+      /usr/bin/mc mb myminio/default;
+      /usr/bin/mc policy download myminio/default;
+      exit 0;
+      "
+    networks:
+      - nginx_network
+
+networks:
+  nginx_network:
+    driver: bridge
+
+volumes:
+  mlflow:
+  minio1:
+  mysql:
