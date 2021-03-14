@@ -1,5 +1,6 @@
 /dataset/
 /ml/tmp/
+outputs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
