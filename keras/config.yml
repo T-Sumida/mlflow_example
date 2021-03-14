@@ -1,0 +1,24 @@
+main:
+  target_size: 224
+  tmp_path: D:\WorkSpace\mlflow-registory-example/keras/tmp
+  epoch: 30
+
+generator:
+  train_path: D:\WorkSpace\mlflow-registory-example/dataset/training_set/training_set
+  test_path: D:\WorkSpace\mlflow-registory-example/dataset/test_set/test_set
+  batch_size: 64
+  
+  train_gen:
+    rotation_range: 20
+    width_shift_range: 0.2
+    height_shift_range: 0.2
+    zoom_range: 0.2
+    horizontal_flip: True
+    validation_split: 0.2
+  test_gen:
+    rescale: 1./255
+
+optimizer:
+  lr: 1.e-3
+  beta_1: 0.9
+  beta_2: 0.999
