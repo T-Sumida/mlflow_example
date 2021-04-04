@@ -1,6 +1,23 @@
 version: "3"
 services:
 
+  api:
+    image: ml_api
+    build:
+      context: .
+      dockerfile: ./config/Dockerfile.api
+    ports:
+      - 8000:8000
+    depends_on:
+      - mlflow
+    volumes:
+      - ./service:/service
+    command:
+      - /bin/bash
+    tty: true
+    networks:
+      - nginx_network
+
   ml:
     image: dev_ml
     build:
