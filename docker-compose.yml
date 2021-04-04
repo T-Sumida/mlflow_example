@@ -1,6 +1,23 @@
 version: "3"
 services:
 
+  api:
+    image: ml_api
+    build:
+      context: .
+      dockerfile: ./config/Dockerfile.api
+    ports:
+      - 8000:8000
+    depends_on:
+      - mlflow
+    volumes:
+      - ./service:/service
+    command:
+      - /bin/bash
+    tty: true
+    networks:
+      - nginx_network
+
   ml:
     image: dev_ml
     build:
@@ -34,10 +51,10 @@ services:
       - mysql
       - minio
     environment:
-      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
-      AWS_ACCESS_KEY_ID: minio-access-key
-      AWS_SECRET_ACCESS_KEY: minio-secret-key
-    command: mlflow server --backend-store-uri mysql://mlflowuser:mlflowpassword@mysql:3306/mlflowdb --default-artifact-root s3://default/ --host 0.0.0.0 --port 5000
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    command: mlflow server --backend-store-uri mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE} --default-artifact-root s3://default/ --host 0.0.0.0 --port 5000
     volumes:
       - mlflow:/var/mlflow
     networks:
@@ -47,11 +64,6 @@ services:
   mysql:
     image: mysql:5.7
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root-password
-      MYSQL_DATABASE: mlflowdb
-      MYSQL_USER: mlflowuser
-      MYSQL_PASSWORD: mlflowpassword
     volumes:
       - mysql:/var/lib/mysql
       - ./config/timeout.cnf:/etc/mysql/conf.d/timeout.cnf
@@ -80,7 +92,7 @@ services:
       - minio
     entrypoint: >
       /bin/sh -c "
-      until (/usr/bin/mc config host add myminio http://minio:9000 minio-access-key minio-secret-key) do echo 'try to create buckets...' && sleep 1; done;
+      until (/usr/bin/mc config host add myminio ${MLFLOW_S3_ENDPOINT_URL} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY}) do echo 'try to create buckets...' && sleep 1; done;
       /usr/bin/mc mb myminio/default;
       /usr/bin/mc policy download myminio/default;
       exit 0;
