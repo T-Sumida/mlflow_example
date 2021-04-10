@@ -1,8 +1,6 @@
 FROM continuumio/miniconda3
 
-RUN mkdir -p /ml
-WORKDIR /ml
-COPY config/mldevenv.yaml /ml/mldevenv.yaml
-RUN conda env create --file mldevenv.yaml
+COPY keras/env.yml env.yml
+RUN conda env create --file env.yaml
 
 CMD ["/bin/bash"]
