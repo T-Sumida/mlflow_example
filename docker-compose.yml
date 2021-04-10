@@ -28,10 +28,13 @@ services:
     depends_on: 
       - mlflow
     environment: 
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=utility,compute
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: utility,compute
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     volumes: 
-      - ./ml:/ml
+      - ./keras:/
       - ./dataset:/dataset
     command:
       - /bin/bash
@@ -67,6 +70,11 @@ services:
     volumes:
       - mysql:/var/lib/mysql
       - ./config/timeout.cnf:/etc/mysql/conf.d/timeout.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     networks:
       - nginx_network
 
